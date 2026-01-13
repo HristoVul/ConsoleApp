@@ -1,11 +1,15 @@
 ﻿using SpotifyAIRecommender.Services;
 using System;
 using System.Threading.Tasks;
+using System.Text;
 
 class Program
 {
     static async Task Main()
-    {
+    {  
+        {Console.OutputEncoding = Encoding.UTF8;
+            Console.InputEncoding = Encoding.UTF8;
+        }
         Console.WriteLine("Spotify + AI Music Recommendation System");
 
         var auth = new SpotifyOAuthService();
