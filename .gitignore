@@ -1,0 +1,13 @@
+## Visual Studio / .NET
+[Bb]in/
+[Oo]bj/
+*.user
+*.userosscache
+*.sln.docstates
+
+## Rider
+.idea/
+*.sln.iml
+
+## macOS
+.DS_Store
