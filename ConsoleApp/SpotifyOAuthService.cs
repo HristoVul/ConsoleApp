@@ -1,15 +1,20 @@
-﻿using SpotifyAIRecommender.Utils;
+﻿using System;
+using System.Collections.Generic;
+using SpotifyAIRecommender.Utils;
 using System.Diagnostics;
 using System.Net;
+using System.Net.Http;
 using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 
 namespace SpotifyAIRecommender.Services
 {
     public class SpotifyOAuthService
     {
-        private const string ClientId = 10e4b7afefdd45bfa4ee4a9d5b63cdcf ;
-        private const string RedirectUri = http://127.0.0.1:8000/callback;
+        private const string ClientId = "10e4b7afefdd45bfa4ee4a9d5b63cdcf";
+        private const string RedirectUri = "http://127.0.0.1:5000/callback";
 
 
         public async Task<string> AuthenticateAsync()
@@ -25,7 +30,7 @@ namespace SpotifyAIRecommender.Services
                              "&scope=user-read-private%20user-read-email%20playlist-read-private";
 
 
-            Console.WriteLine("Отвори следния линк:");
+            Console.WriteLine("Open the following URL:");
             Console.WriteLine(authUrl);
 
 
@@ -37,7 +42,7 @@ namespace SpotifyAIRecommender.Services
 
 
             var listener = new HttpListener();
-            listener.Prefixes.Add("http://localhost:5000/callback/");
+            listener.Prefixes.Add("http://127.0.0.1:5000/callback/");
             listener.Start();
 
 
@@ -64,11 +69,11 @@ namespace SpotifyAIRecommender.Services
 
             var body = new FormUrlEncodedContent(new Dictionary<string, string>
             {
-                {"client_id", ClientId},
-                {"grant_type", "authorization_code"},
-                {"code", code},
-                {"redirect_uri", RedirectUri},
-                {"code_verifier", verifier}
+                { "client_id", ClientId },
+                { "grant_type", "authorization_code" },
+                { "code", code },
+                { "redirect_uri", RedirectUri },
+                { "code_verifier", verifier }
             });
 
 
@@ -76,8 +81,20 @@ namespace SpotifyAIRecommender.Services
             string json = await response.Content.ReadAsStringAsync();
 
 
-            var tokenObj = System.Text.Json.JsonSerializer.Deserialize<JsonElement>(json);
-            return tokenObj.GetProperty("access_token").GetString();
+            var tokenObj = JsonSerializer.Deserialize<ResponseToken>(json);
+
+            return tokenObj.access_token;
         }
     }
+
+
+    public class ResponseToken
+    {
+        public string access_token { get; set; }
+        public string token_type { get; set; }
+        public string scope { get; set; }
+        public int expires_in { get; set; }
+        public string refresh_token { get; set; }
+    }
+
 }

@@ -1,40 +1,35 @@
-﻿using SpotifyAPI.Web;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using SpotifyAPI.Web;
 
-
-namespace SpotifyAIRecommender.Services
+public class SpotifyApiService
 {
-    public class SpotifyApiService
+    private readonly SpotifyClient _client;
+
+    public SpotifyApiService(string accessToken)
     {
-        private readonly SpotifyClient _client;
-
-
-        public SpotifyApiService(string accessToken)
-        {
-            _client = new SpotifyClient(accessToken);
-        }
-
-
-        public async Task<List<string>> SearchTracksAsync(string query)
-        {
-            var result = await _client.Search.Item(new SearchRequest(SearchRequest.Types.Track, query));
-
-
-            return result.Tracks.Items
-                .Select(t => $"{t.Name} - {t.Artists.First().Name}")
-                .ToList();
-        }
-
-
-        public async Task<List<string>> GetRecommendationsAsync(string seedTrackId)
-        {
-            var rec = await _client.Recommendations.Get(new RecommendationsRequest
-            {
-                SeedTracks = new List<string> { seedTrackId },
-                Limit = 10
-            });
-
-
-            return rec.Tracks.Select(t => $"{t.Name} - {t.Artists.First().Name}").ToList();
-        }
+        _client = new SpotifyClient(accessToken);
     }
+
+    public async Task<List<string>> SearchTracksAsync(string query)
+    {
+        var search = await _client.Search.Item(new SearchRequest(SearchRequest.Types.Track, query));
+
+        return search.Tracks.Items
+            .Select(t => $"{t.Name} - {t.Artists[0].Name}")
+            .ToList();
+    }
+
+    // public async Task<List<string>> GetRecommendationsAsync(string trackId)
+    // {
+    //     var request = new RecommendationsRequest
+    //     {
+    //         SeedTracks = new List<string> { trackId }
+    //     };
+    //
+    //     var recs = await _client.Browse.GetRecommendations(request);
+    //
+    //     return recs.Tracks.Select(t => t.Name).ToList();
+    // }
 }

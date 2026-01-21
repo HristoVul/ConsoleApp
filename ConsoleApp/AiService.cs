@@ -1,26 +1,28 @@
-﻿using OpenAI.Chat;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using OpenAI;
+using OpenAI.Chat;
 
-
-namespace SpotifyAIRecommender.Services
+public class AiService
 {
-    public class AiService
+    private readonly OpenAIClient _client;
+
+    public AiService(string apiKey)
     {
-        private readonly ChatClient _client;
+        _client = new OpenAIClient(apiKey);
+    }
 
+    public async Task<string> AskAsync(string prompt)
+    {
+        var chatClient = _client.GetChatClient("gpt-4o-mini");
 
-        public AiService(string apiKey)
+        var messages = new List<ChatMessage>
         {
-            _client = new ChatClient("gpt-4.1", apiKey);
-        }
+            new UserChatMessage(prompt)
+        };
 
+        var response = await chatClient.CompleteChatAsync(messages);
 
-        public string GenerateAIMusicRecommendations(List<string> tracks)
-        {
-            string prompt = $"Предложи подобни песни: {string.Join(", ", tracks)}. Дай само изпълнител и заглавие.";
-
-
-            var response = _client.Complete(prompt);
-            return response;
-        }
+        return response.Value.Content[0].Text;
     }
 }
