@@ -2,6 +2,7 @@
 using System;
 using System.Threading.Tasks;
 using System.Text;
+using ConsoleApp.Credentials;
 
 class Program
 {
@@ -13,15 +14,13 @@ class Program
         Console.WriteLine("Spotify + AI Music Recommendation System");
 
         var auth = new SpotifyOAuthService();
-        string token = await auth.AuthenticateAsync();
-
-        if (string.IsNullOrEmpty(token))
+        
+        if (!await CredentialStorage.HasValidTokenAsync("spotify"))
         {
-            Console.WriteLine("OAuth failed – token is empty");
-            return;
+            await auth.AuthenticateAsync();
         }
-
-        var spotify = new SpotifyApiService(token);
+        
+        var spotify = new SpotifyApiService();
 
         Console.Write("Enter artist or song: ");
         string query = Console.ReadLine();
@@ -34,7 +33,8 @@ class Program
             Console.WriteLine(" - " + t);
         }
 
-        var openAiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+        // var openAiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+        var openAiKey = "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";
         if (string.IsNullOrEmpty(openAiKey))
         {
             Console.WriteLine("OPENAI_API_KEY not found");
