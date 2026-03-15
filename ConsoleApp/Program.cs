@@ -33,8 +33,7 @@ class Program
             Console.WriteLine(" - " + t);
         }
 
-        // var openAiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-        var openAiKey = "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";
+        var openAiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
         if (string.IsNullOrEmpty(openAiKey))
         {
             Console.WriteLine("OPENAI_API_KEY not found");
