@@ -2,6 +2,7 @@
 using System;
 using System.Threading.Tasks;
 using System.Text;
+using ConsoleApp.Credentials;
 
 class Program
 {
@@ -13,15 +14,13 @@ class Program
         Console.WriteLine("Spotify + AI Music Recommendation System");
 
         var auth = new SpotifyOAuthService();
-        string token = await auth.AuthenticateAsync();
-
-        if (string.IsNullOrEmpty(token))
+        
+        if (!await CredentialStorage.HasValidTokenAsync("spotify"))
         {
-            Console.WriteLine("OAuth failed – token is empty");
-            return;
+            await auth.AuthenticateAsync();
         }
-
-        var spotify = new SpotifyApiService(token);
+        
+        var spotify = new SpotifyApiService();
 
         Console.Write("Enter artist or song: ");
         string query = Console.ReadLine();

@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using SpotifyAIRecommender.Utils;
+﻿using SpotifyAIRecommender.Utils;
 using System.Diagnostics;
 using System.Net;
-using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
+using ConsoleApp.Credentials;
+using ConsoleApp.Models;
 
 
 namespace SpotifyAIRecommender.Services
@@ -17,7 +15,7 @@ namespace SpotifyAIRecommender.Services
         private const string RedirectUri = "http://127.0.0.1:5000/callback";
 
 
-        public async Task<string> AuthenticateAsync()
+        public async Task AuthenticateAsync()
         {
             var (verifier, challenge) = PkceUtil.GeneratePkce();
 
@@ -58,11 +56,11 @@ namespace SpotifyAIRecommender.Services
             listener.Stop();
 
 
-            return await ExchangeCodeForToken(code, verifier);
+            await ExchangeCodeForToken(code, verifier);
         }
 
 
-        private async Task<string> ExchangeCodeForToken(string code, string verifier)
+        private async Task ExchangeCodeForToken(string code, string verifier)
         {
             using var client = new HttpClient();
 
@@ -81,20 +79,9 @@ namespace SpotifyAIRecommender.Services
             string json = await response.Content.ReadAsStringAsync();
 
 
-            var tokenObj = JsonSerializer.Deserialize<ResponseToken>(json);
+            var tokenObj = JsonSerializer.Deserialize<AccessToken>(json);
 
-            return tokenObj.access_token;
+            await CredentialStorage.StoreAsync<AccessToken>("spotify", tokenObj); ;
         }
     }
-
-
-    public class ResponseToken
-    {
-        public string access_token { get; set; }
-        public string token_type { get; set; }
-        public string scope { get; set; }
-        public int expires_in { get; set; }
-        public string refresh_token { get; set; }
-    }
-
 }
