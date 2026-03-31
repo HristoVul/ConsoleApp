@@ -57,4 +57,5 @@ public static class CredentialStorage
         string executableFolder = AppContext.BaseDirectory;
         return $"{executableFolder}{fileName}.json";
     }
+ 
 }

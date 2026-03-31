@@ -1,6 +1,6 @@
 ﻿using ConsoleApp.Credentials;
 using SpotifyAPI.Web;
-
+namespace ConsoleApp.Services;
 public class SpotifyApiService
 {
     public async Task<List<string>> SearchTracksAsync(string query)
