@@ -10,8 +10,9 @@ namespace ConsoleApp
     {
         static async Task Main(string[] args)
         {
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
-            Console.InputEncoding = System.Text.Encoding.UTF8;
+            Console.OutputEncoding = Encoding.UTF8;
+            Console.InputEncoding = Encoding.UTF8;
+            
             var authService = new SpotifyOAuthService();
             var credentials = new CredentialStorage();
 
@@ -53,12 +54,15 @@ namespace ConsoleApp
                 await profileStore.SaveKeywordReferenceAsync(profileData.ToKeywordReference());
             }
 
-            var ollamaService = new OllamaService("phi3:latest");
+            // var ollamaService = new OllamaService("phi3:latest");
+            var ollamaService = new OllamaService("gemma4:e2b");
             await ollamaService.StartAsync();
         
             var ollamaClient = new OllamaClient(ollamaService, await profileStore.GetKeywordReferenceAsync());
 
             Console.WriteLine($"Hey, {profile.DisplayName}, what's on your mind:");
+
+            var loader = new Loader();
         
             while (true)
             {
@@ -68,15 +72,16 @@ namespace ConsoleApp
                     ollamaClient.Dispose();   
                     break;
                 }
-            
-            
-            
-                var keywords = await ollamaClient.ExtractKeywords(input);
 
-                Console.WriteLine("\nKeywords:");
+                loader.Start("Getting keywords");
+                var keywords = await ollamaClient.ExtractKeywords(input);
+                
+                loader.Stop("\nKeywords:");
                 Console.WriteLine(keywords);
 
                 await ollamaClient.StreamRecommendationsAsync(input, keywords);
+
+                Console.WriteLine();
             }
         }
     }

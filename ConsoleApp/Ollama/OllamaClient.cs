@@ -51,7 +51,7 @@ Goals:
 
 Output rules:
 - Return exactly 10 to 15 songs.
-- Return only a comma-separated list of song titles or song-title plus artist pairs.
+- Return list of song titles or artist - song title pairs. Return each on a new line)
 - Keep the recommendations concise and relevant.
 - No explanations, no numbering, no bullets, no extra text.
 
@@ -65,10 +65,8 @@ Profile reference:
 {_reference}
 ";
 
-        await _service.StreamPromptAsync(prompt, Console.WriteLine);
+        await _service.StreamPromptAsync(prompt, Console.Write);
     }
-
-
 
     public void Dispose()
     {

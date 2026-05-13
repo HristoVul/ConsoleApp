@@ -9,7 +9,7 @@ public class OllamaService : IOllamaService
 {
     private readonly string _model;
     private Process? _ollamaProcess;
-    private readonly HttpClient _http = new HttpClient(){ Timeout = TimeSpan.FromMinutes(10)};
+    private readonly HttpClient _http = new(){ Timeout = TimeSpan.FromMinutes(10)};
     private bool _disposed;
 
     public OllamaService(string model)
@@ -27,11 +27,18 @@ public class OllamaService : IOllamaService
 
         Console.WriteLine($"Ensuring model '{_model}' is installed...");
         await PullModelAsync();
-        
-        Console.WriteLine($"Warming up model '{_model}'...");
-        await QueryModelAsync("Hello");
-        
-        Console.WriteLine($"Ollama started with model {_model}");
+
+        try
+        {
+            Console.WriteLine($"Warming up model '{_model}'...");
+            await QueryModelAsync("Hello");
+
+            Console.WriteLine($"Ollama started with model {_model}");
+        }
+        catch(InvalidOperationException ioe)
+        {
+            Console.WriteLine($"Ollama could not be started {ioe.Message}");
+        }
     }
     
     public async Task<string> SendPromptAsync(string prompt)
@@ -87,12 +94,31 @@ public class OllamaService : IOllamaService
     // ---------------------------------------------------------
     private void StartServer()
     {
+        // If this instance already started the process and it is still alive, do nothing.
         if (_ollamaProcess != null && !_ollamaProcess.HasExited)
+            return;
+        
+        // If Ollama server is already running (started externally or from prior session), don't spawn another.
+        if (IsServerRunning())
             return;
 
         var psi = NewOllamaProcessInfo("serve");
 
         _ollamaProcess = Process.Start(psi);
+    }
+    
+    private bool IsServerRunning()
+    {
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(1) };
+            var res = http.GetAsync("http://localhost:11434/api/tags").GetAwaiter().GetResult();
+            return res.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
     }
     
     private async Task WaitForServerAsync()
@@ -143,9 +169,30 @@ public class OllamaService : IOllamaService
         );
 
         string resultJson = await response.Content.ReadAsStringAsync();
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException(
+                $"Ollama generate failed ({(int)response.StatusCode}): {resultJson}");
+        }
 
         using var doc = JsonDocument.Parse(resultJson);
-        return doc.RootElement.GetProperty("response").GetString();
+        
+        if (doc.RootElement.TryGetProperty("response", out var responseElement))
+        {
+            return responseElement.GetString() ?? string.Empty;
+        }
+
+        if (doc.RootElement.TryGetProperty("error", out var errorElement))
+        {
+            throw new InvalidOperationException(
+                $"Ollama returned error payload: {errorElement.GetString()}");
+        }
+
+        throw new InvalidOperationException(
+            $"Unexpected Ollama payload (missing 'response'): {resultJson}");
+        
+        // return doc.RootElement.GetProperty("response").GetString();
     }
     
     // ---------------------------------------------------------
@@ -157,8 +204,13 @@ public class OllamaService : IOllamaService
         {
             var psi = NewOllamaProcessInfo($"stop {_model}");
             
-            Process.Start(psi);
+            var proc = Process.Start(psi);
+            
             Console.WriteLine($"Unloading model '{_model}'...");
+            
+            proc.WaitForExit();
+
+            Console.WriteLine("Goodbye :)");
         }
         catch
         {

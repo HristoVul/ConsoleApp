@@ -30,7 +30,12 @@ public class SpotifyApiService(SpotifyClient client)
 
     public async Task<List<FullArtist>> GetTopArtistsAsync()
     {
-        var response = await client.UserProfile.GetTopArtists(new UsersTopItemsRequest(TimeRange.MediumTerm));
+        var request = new UsersTopItemsRequest(TimeRange.MediumTerm)
+        {
+            Limit = 50
+        };
+        
+        var response = await client.UserProfile.GetTopArtists(request);
         
         var result = response.Items?.ToList() ?? [];
         return result;
@@ -38,7 +43,12 @@ public class SpotifyApiService(SpotifyClient client)
 
     public async Task<List<FullTrack>> GetTopTracksAsync()
     {
-        var response = await client.UserProfile.GetTopTracks(new UsersTopItemsRequest(TimeRange.MediumTerm));
+        var request = new UsersTopItemsRequest(TimeRange.MediumTerm)
+        {
+            Limit = 50
+        };
+        
+        var response = await client.UserProfile.GetTopTracks(request);
 
         var result = response.Items?.ToList() ?? [];
         return result;
@@ -46,7 +56,7 @@ public class SpotifyApiService(SpotifyClient client)
     
     public async Task<List<PlayHistoryItem>> GetRecentHistory()
     {
-        var req = new PlayerRecentlyPlayedRequest() { Limit = 20 };
+        var req = new PlayerRecentlyPlayedRequest() { Limit = 20 }; //maximum limit is 20
         var response = await client.Player.GetRecentlyPlayed(req);
         
         var result = response.Items?.ToList() ?? [];
