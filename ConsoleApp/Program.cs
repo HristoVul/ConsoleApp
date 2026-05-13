@@ -1,50 +1,88 @@
-﻿using SpotifyAIRecommender.Services;
-using System;
-using System.Threading.Tasks;
-using System.Text;
-using ConsoleApp.Credentials;
+﻿using System.Text;
+using ConsoleApp.Models;
+using ConsoleApp.Ollama;
+using ConsoleApp.Storage;
+using SpotifyAPI.Web;
 
-class Program
+namespace ConsoleApp
 {
-    static async Task Main()
-    {  
-        {Console.OutputEncoding = Encoding.UTF8;
+    public class Program
+    {
+        static async Task Main(string[] args)
+        {
+            Console.OutputEncoding = Encoding.UTF8;
             Console.InputEncoding = Encoding.UTF8;
-        }
-        Console.WriteLine("Spotify + AI Music Recommendation System");
+            
+            var authService = new SpotifyOAuthService();
+            var credentials = new CredentialStorage();
 
-        var auth = new SpotifyOAuthService();
+            SpotifyClient client;
+            if (await credentials.HasValidTokenAsync())
+            {
+                var token = await credentials.GetTokenAsync();
+                client = await authService.FromAccessToken(token!);
+            }
+            else
+            {
+                client = await authService.AuthenticateAsync();
+            }
+
+            await credentials.SaveTokenAsync(authService.CurrentAccess);
+
+            var spotifyApi = new SpotifyApiService(client);
+
+            PrivateUser profile = await spotifyApi.GetUserProfileAsync();
         
-        if (!await CredentialStorage.HasValidTokenAsync("spotify"))
-        {
-            await auth.AuthenticateAsync();
-        }
+            var profileStore = new ProfileStorage(profile.Id);
+
+            if (!profileStore.Exists() || profileStore.LastUpdated < DateTime.Now.AddDays(-10))
+            {
+                List<FullArtist> topArtists = await spotifyApi.GetTopArtistsAsync();
+                List<FullTrack> topTracks = await spotifyApi.GetTopTracksAsync();
+                List<PlayHistoryItem> recentHistory = await spotifyApi.GetRecentHistory();
+
+                ProfileData profileData = new ProfileData
+                {
+                    Artists = topArtists.Select(t => t.Name).ToArray(),
+                
+                    Tracks = topTracks.Select(t => new TrackEntry(t.Name, t.Artists.First().Name, t.Album.Name, t.Href))
+                        .ToList(),
+                    PlaybackHistory = recentHistory.Select(h =>
+                        new TrackEntry(h.Track.Name, h.Track.Artists.First().Name, h.Track.Album.Name, h.Track.Href)).ToList()
+                };
+
+                await profileStore.SaveKeywordReferenceAsync(profileData.ToKeywordReference());
+            }
+
+            // var ollamaService = new OllamaService("phi3:latest");
+            var ollamaService = new OllamaService("gemma4:e2b");
+            await ollamaService.StartAsync();
         
-        var spotify = new SpotifyApiService();
+            var ollamaClient = new OllamaClient(ollamaService, await profileStore.GetKeywordReferenceAsync());
 
-        Console.Write("Enter artist or song: ");
-        string query = Console.ReadLine();
+            Console.WriteLine($"Hey, {profile.DisplayName}, what's on your mind:");
 
-        var tracks = await spotify.SearchTracksAsync(query);
+            var loader = new Loader();
+        
+            while (true)
+            {
+                var input = Console.ReadLine() ?? "";
+                if (input.ToLower() == "exit")
+                {
+                    ollamaClient.Dispose();   
+                    break;
+                }
 
-        Console.WriteLine("Find songs:");
-        foreach (var t in tracks)
-        {
-            Console.WriteLine(" - " + t);
+                loader.Start("Getting keywords");
+                var keywords = await ollamaClient.ExtractKeywords(input);
+                
+                loader.Stop("\nKeywords:");
+                Console.WriteLine(keywords);
+
+                await ollamaClient.StreamRecommendationsAsync(input, keywords);
+
+                Console.WriteLine();
+            }
         }
-
-        var openAiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-        if (string.IsNullOrEmpty(openAiKey))
-        {
-            Console.WriteLine("OPENAI_API_KEY not found");
-            return;
-        }
-
-        var ai = new AiService(openAiKey);
-        var result = await ai.AskAsync("give me 10 most popular tracks");
-
-        Console.WriteLine();
-        Console.WriteLine("AI Рекомендации:");
-        Console.WriteLine(result);
     }
 }

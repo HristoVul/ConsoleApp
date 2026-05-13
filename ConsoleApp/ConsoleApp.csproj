@@ -8,8 +8,14 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="OpenAI" Version="2.8.0" />
-      <PackageReference Include="SpotifyAPI.Web" Version="7.2.1" />
+      <PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-rc5" />
+      <PackageReference Include="Microsoft.Agents.AI.OpenAI" Version="1.0.0-rc5" />
+      <PackageReference Include="Microsoft.Extensions.AI" Version="10.4.1" />
+      <PackageReference Include="Microsoft.Extensions.AI.Ollama" Version="9.7.0-preview.1.25356.2" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="11.0.0-preview.2.26159.112" />
+      <PackageReference Include="OpenAI" Version="2.9.1" />
+      <PackageReference Include="SpotifyAPI.Web" Version="7.4.2" />
+      <PackageReference Include="System.Text.Json" Version="11.0.0-preview.2.26159.112" />
     </ItemGroup>
 
 </Project>
